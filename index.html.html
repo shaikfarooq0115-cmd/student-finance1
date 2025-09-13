@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Student Finance Manager</title>
+<style>
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f7f9fc;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  header {
+    background: #2c3e50;
+    color: #ecf0f1;
+    padding: 1rem;
+    text-align: center;
+  }
+  main {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  h2 {
+    margin-top: 2rem;
+  }
+  form {
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  form > * {
+    flex: 1 1 150px;
+  }
+  label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-weight: 600;
+  }
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  select {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1rem;
+  }
+  button {
+    background: #2980b9;
+    color: white;
+    border: none;
+    padding: 0.7rem 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 4px;
+    flex: 1 1 100%;
+    max-width: 160px;
+    align-self: flex-end;
+  }
+  button:hover {
+    background: #1c5980;
+  }
+
+  .expenses-list {
+    margin-top: 1rem;
+    background: white;
+    border-radius: 6px;
+    padding: 1rem;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+  }
+  .expense-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #eee;
+  }
+  .expense-item:last-child {
+    border-bottom: none;
+  }
+  .category {
+    font-weight: 700;
+    color: #2980b9;
+  }
+  .amount {
+    font-weight: 700;
+  }
+
+  .dashboard {
+    margin-top: 2rem;
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+  }
+
+  .goal-tracker {
+    margin-top: 2rem;
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+  }
+
+  .progress-bar {
+    background: #ddd;
+    border-radius: 20px;
+    overflow: hidden;
+    height: 20px;
+    margin-top: 0.5rem;
+  }
+  .progress {
+    background: #27ae60;
+    height: 100%;
+    width: 0;
+    transition: width 0.5s ease;
+  }
+  .alert {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    background: #e74c3c;
+    color: white;
+    font-weight: 700;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    form > * {
+      flex: 1 1 100%;
+    }
+    button {
+      max-width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Student Finance Manager</h1>
+</header>
+
+<main>
+  <section>
+    <h2>Add Expense</h2>
+    <form id="expense-form">
+      <div>
+        <label for="desc">Description</label>
+        <input type="text" id="desc" placeholder="e.g., lunch, bus ticket" required />
+      </div>
+      <div>
+        <label for="amount">Amount ($)</label>
+        <input type="number" id="amount" min="0.01" step="0.01" required />
+      </div>
+      <div>
+        <label for="date">Date</label>
+        <input type="date" id="date" required />
+      </div>
+      <button type="submit">Add Expense</button>
+    </form>
+
+    <div class="expenses-list" id="expenses-list">
+      <h3>Expenses</h3>
+      <div id="expense-items">
+        <!-- expense items here -->
+      </div>
+    </div>
+  </section>
+
+  <section class="dashboard">
+    <h2>Spending Summary & Predictive Analysis</h2>
+    <p>Total Spent: $<span id="total-spent">0.00</span></p>
+    <p>Estimated Monthly Spending: $<span id="monthly-prediction">0.00</span></p>
+    <p id="budget-alert" class="alert" style="display:none;">You have exceeded your budget!</p>
+  </section>
+
+  <section class="goal-tracker">
+    <h2>Budget Goal Tracking</h2>
+    <label for="budget-goal">Set Monthly Budget ($):</label>
+    <input type="number" id="budget-goal" min="0" step="0.01" placeholder="e.g., 500" />
+    <div class="progress-bar" aria-label="Budget spending progress">
+      <div class="progress" id="progress-bar"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+  // Expense categories based on keywords
+  const categories = {
+    food: ['lunch', 'dinner', 'breakfast', 'meal', 'restaurant', 'cafe', 'food', 'coffee', 'snack'],
+    transport: ['bus', 'train', 'uber', 'taxi', 'metro', 'transport', 'subway', 'bike', 'taxi'],
+    entertainment: ['movie', 'netflix', 'concert', 'game', 'entertainment', 'music'],
+    education: ['book', 'tuition', 'course', 'school', 'education', 'class', 'study', 'exam'],
+    bills: ['electricity', 'water', 'internet', 'phone', 'bill', 'rent', 'subscription', 'utility'],
+    shopping: ['clothes', 'shopping', 'mall', 'store', 'amazon', 'gift', 'purchase'],
+    health: ['doctor', 'medicine', 'pharmacy', 'health', 'hospital', 'insurance'],
+    other: []
+  };
+
+  // Helper: categorize based on description
+  function categorize(desc) {
+    const descLower = desc.toLowerCase();
+    for (const [category, keywords] of Object.entries(categories)) {
+      if (keywords.some(word => descLower.includes(word))) {
+        return category.charAt(0).toUpperCase() + category.slice(1);
+      }
+    }
+    return 'Other';
+  }
+
+  // State
+  let expenses = [];
+  let budgetGoal = 0;
+
+  // Elements
+  const expenseForm = document.getElementById('expense-form');
+  const expenseItemsDiv = document.getElementById('expense-items');
+  const totalSpentEl = document.getElementById('total-spent');
+  const monthlyPredictionEl = document.getElementById('monthly-prediction');
+  const budgetGoalInput = document.getElementById('budget-goal');
+  const progressBar = document.getElementById('progress-bar');
+  const budgetAlert = document.getElementById('budget-alert');
+
+  // Add expense handler
+  expenseForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const desc = document.getElementById('desc').value.trim();
+    const amount = parseFloat(document.getElementById('amount').value);
+    const dateStr = document.getElementById('date').value;
+
+    if (!desc || isNaN(amount) || amount <= 0 || !dateStr) {
+      alert('Please fill out all fields correctly.');
+      return;
+    }
+
+    const category = categorize(desc);
+    const date = new Date(dateStr);
+
+    expenses.push({ desc, amount, date, category });
+    expenses.sort((a,b) => a.date - b.date); // keep sorted by date
+    updateUI();
+
+    expenseForm.reset();
+  });
+
+  // Budget goal handler
+  budgetGoalInput.addEventListener('input', () => {
+    budgetGoal = parseFloat(budgetGoalInput.value) || 0;
+    updateUI();
+  });
+
+  // Update UI function
+  function updateUI() {
+    // Render expense list
+    expenseItemsDiv.innerHTML = '';
+    expenses.forEach(({desc, amount, date, category}) => {
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'expense-item';
+      itemDiv.innerHTML = `
+        <div><strong>${desc}</strong> <span class="category">[${category}]</span></div>
+        <div>$${amount.toFixed(2)}<br><small>${date.toLocaleDateString()}</small></div>
+      `;
+      expenseItemsDiv.appendChild(itemDiv);
+    });
+
+    // Calculate total spent this month
+    const now = new Date();
+    const currentMonthExpenses = expenses.filter(e => e.date.getMonth() === now.getMonth() && e.date.getFullYear() === now.getFullYear());
+    const totalSpent = currentMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
+    totalSpentEl.textContent = totalSpent.toFixed(2);
+
+    // Predict monthly spending (simple linear based on days elapsed)
+    const dayOfMonth = now.getDate();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+    const predicted = dayOfMonth > 0 ? (totalSpent / dayOfMonth) * daysInMonth : 0;
+    monthlyPredictionEl.textContent = predicted.toFixed(2);
+
+    // Update budget progress bar
+    if (budgetGoal > 0) {
+      let progressPercent = (totalSpent / budgetGoal) * 100;
+      progressPercent = Math.min(progressPercent, 100);
+      progressBar.style.width = progressPercent + '%';
+
+      // Show alert if exceeded budget
+      if (totalSpent > budgetGoal) {
+        budgetAlert.style.display = 'block';
+      } else {
+        budgetAlert.style.display = 'none';
+      }
+    } else {
+      progressBar.style.width = '0%';
+      budgetAlert.style.display = 'none';
+    }
+  }
+</script>
+
+</body>
+</html>
